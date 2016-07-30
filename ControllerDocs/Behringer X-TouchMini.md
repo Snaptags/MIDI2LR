@@ -1,13 +1,14 @@
 Behringer X-Touch Mini USB DAW Controller
 =========================================
-
 http://www.music-group.com/Categories/Behringer/Computer-Audio/Desktop-Controllers/X-TOUCH-MINI/
+
+Firmware: 1.08
 
 Midi out messages recorded using MIDI-OX.
 No additional software has been installed, controller using factory settings.
 
-Encoders
---------
+Encoders, factory setting
+-------------------------
 Endless, but do send 0-127 in factory setting. LEDs light up according to the value automatically.
 
 | TIMESTAMP | IN | PORT | STATUS | DATA1 | DATA2 | CHAN | NOTE | EVENT |
@@ -19,12 +20,29 @@ DATA1: Encoder Number (01 to 08 for Layer a, 0B to 12 for layer B)
 EVENT: Different for each encoder.
 
 Layer A, starting from 01:
+```
 CC: Modulation,      CC: Breath,         Control Change, CC: Foot Controller, 
 CC: Portamento Time, CC: Data Entry MSB, CC: Volume,     CC: Balance
+```
 
 Layer B, starting from 0B:
+```
 CC: Expression,      Control Change,     Control Change, Control Change, 
 Control Change,      Control Change,     Control Change, Control Change,
+```
+
+Encoders, set to "relative" using X-Touch Editor
+------------------------------------------------
+
+| TIMESTAMP | IN | PORT | STATUS | DATA1 | DATA2 | CHAN | NOTE | EVENT |
+| 000298A6  |  1 |   6  |     BA |    01 |    01 |   11 |  --- | CC: Modulation |
+
+DATA2:
+```
+cw: 01-07, ccw: 7F-79 (setting relative 1)
+cw: 41-47, ccw: 3F-39 (setting relative 2)
+cw: 01-07, ccw: 41-47 (setting relative 1)
+```
 
 Encoder pushing
 ---------------

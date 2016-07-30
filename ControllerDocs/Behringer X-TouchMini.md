@@ -40,6 +40,7 @@ Encoders, set to "relative" using X-Touch Editor
 ------------------------------------------------
 
 | TIMESTAMP | IN | PORT | STATUS | DATA1 | DATA2 | CHAN | NOTE | EVENT |
+| --------- | --:| ----:| ------:| -----:| -----:| ----:|:----:|:-----:|
 | 000298A6  |  1 |   6  |     BA |    01 |    01 |   11 |  --- | CC: Modulation |
 
 DATA2:
@@ -53,6 +54,7 @@ Encoder pushing
 ---------------
 
 | TIMESTAMP | IN | PORT | STATUS | DATA1 | DATA2 | CHAN | NOTE | EVENT |
+| --------- | --:| ----:| ------:| -----:| -----:| ----:|:----:|:-----:|
 | 000D0CFB  |  1 |   6  |     9A |    00 |    7F |   11 | C -1 | Note On |
 | 000D0D87  |  1 |   6  |     8A |    00 |    00 |   11 | C -1 | Note Off |
 

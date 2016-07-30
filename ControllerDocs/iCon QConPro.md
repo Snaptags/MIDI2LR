@@ -1,4 +1,7 @@
-MIDI-OX
+iCon QCon Pro USB DAW Controller
+https://www.icondigitalusa.com/daw-controllers/
+
+Midi out messages recorded using MIDI-OX.
 
 =================================================
 Nuendo mode, Cubase mode, Reason Mode, Bitwig

@@ -7,6 +7,11 @@ Firmware: 1.08
 Midi out messages recorded using MIDI-OX.
 No additional software has been installed, controller using factory settings.
 
+Assignments can be changed via X-Touch Editor, but all controls are limited to 7bit values only.
+Encoders can be set to continuous mode via 3 different behaviour patterns, see below.
+
+Assignment changes are stored in the device, you do not have to open the editor again, once you modified the controller to match your preferences.
+
 Encoders, factory setting
 -------------------------
 Endless, but do send 0-127 in factory setting. LEDs light up according to the value automatically.

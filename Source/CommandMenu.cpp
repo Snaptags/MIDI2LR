@@ -23,9 +23,9 @@ MIDI2LR.  If not, see <http://www.gnu.org/licenses/>.
 #include <limits>
 #include "LRCommands.h"
 
-CommandMenu::CommandMenu(const MIDI_Message& message):
+CommandMenu::CommandMenu(const MIDI_Message_ID& message):
+  juce::TextButton{"Unmapped"},
   message_{message},
-  TextButton{"Unmapped"},
 
   menus_({"Keyboard Shortcuts for User", "General", "Library", "Develop",
   "Basic", "Tone Curve", "HSL / Color / B&W", "Reset HSL / Color / B&W",
@@ -47,10 +47,10 @@ CommandMenu::CommandMenu(const MIDI_Message& message):
 void CommandMenu::Init(std::shared_ptr<CommandMap>& mapCommand) {
     //copy the pointer
   command_map_ = mapCommand;
-  addListener(this);
+  juce::Button::addListener(this);
 }
 
-void CommandMenu::setMsg(const MIDI_Message& message) noexcept {
+void CommandMenu::setMsg(const MIDI_Message_ID& message) noexcept {
   message_ = message;
 }
 
@@ -62,16 +62,16 @@ void CommandMenu::setSelectedItem(unsigned int index) {
     setButtonText(LRCommandList::NextPrevProfile[index - 1 - LRCommandList::LRStringList.size()]);
 }
 
-void CommandMenu::buttonClicked(Button* /*button*/) {
+void CommandMenu::buttonClicked(juce::Button* /*button*/) {
   size_t index = 1;
   auto submenu_tick_set = false;
-  PopupMenu main_menu;
+  juce::PopupMenu main_menu;
   main_menu.addItem(index, "Unmapped", true, submenu_tick_set = (index == selected_item_));
   index++;
 
   // add each submenu
   for (size_t menu_index = 0; menu_index < menus_.size(); menu_index++) {
-    PopupMenu subMenu;
+    juce::PopupMenu subMenu;
     for (const auto& command : menu_entries_[menu_index]) {
       auto already_mapped = false;
       if ((index - 1 < LRCommandList::LRStringList.size()) && (command_map_)) {
@@ -83,8 +83,8 @@ void CommandMenu::buttonClicked(Button* /*button*/) {
       // disabling a previously mapped entry
 
       if (already_mapped)
-        subMenu.addColouredItem(index, command, Colours::red, true,
-        index == selected_item_);
+        subMenu.addColouredItem(index, command, juce::Colours::red, true,
+          index == selected_item_);
       else
         subMenu.addItem(index, command, true, index == selected_item_);
 

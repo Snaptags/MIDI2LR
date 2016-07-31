@@ -28,56 +28,61 @@ void MIDIProcessor::Init(void) {
   InitDevices_();
 }
 
-void MIDIProcessor::handleIncomingMidiMessage(MidiInput * /*device*/,
-  const MidiMessage &message) {
-  if (message.isController()) {
-    const auto channel =
-      static_cast<unsigned short int>(message.getChannel()); // 1-based
-    const auto control =
-      static_cast<unsigned short int>(message.getControllerNumber());
-    const auto value =
-      static_cast<unsigned short int>(message.getControllerValue());
-    if (nrpn_filter_.ProcessMidi(channel, control, value)) { //true if nrpn piece
-      if (nrpn_filter_.IsReady(channel)) { //send when finished
-        for (auto listener : listeners_)
-          listener->handleMidiCC(channel, nrpn_filter_.GetControl(channel),
-          nrpn_filter_.GetValue(channel));
-        nrpn_filter_.Clear(channel);
-      }
-    }
-    else //regular message
-      for (auto listener : listeners_)
-        listener->handleMidiCC(channel, control, value);
-  }
-  else if (message.isNoteOn()) {
-	  for (auto listener : listeners_) {
-		  listener->handleMidiNote(message.getChannel(), message.getNoteNumber());
-	  }
-  }
-  else if (message.isPitchWheel()) {
-    const auto value =
-      static_cast<unsigned short int>(message.getPitchWheelValue());
-	  for (auto listener : listeners_) {
-		  listener->handlePitchWheel(message.getChannel(), value);
-	  }
-  }
+void MIDIProcessor::handleIncomingMidiMessage(juce::MidiInput * /*device*/,
+	const juce::MidiMessage& message) {
+	if (message.isController()) {
+		const auto channel =
+			static_cast<unsigned short int>(message.getChannel()); // 1-based
+		const auto control =
+			static_cast<unsigned short int>(message.getControllerNumber());
+		const auto value =
+			static_cast<unsigned short int>(message.getControllerValue());
+		if (nrpn_filter_.ProcessMidi(channel, control, value)) { //true if nrpn piece
+			if (nrpn_filter_.IsReady(channel)) { //send when finished
+				for (const auto& listener : listeners_)
+					listener->handleMidiCC(channel, nrpn_filter_.GetControl(channel),
+						nrpn_filter_.GetValue(channel));
+				nrpn_filter_.Clear(channel);
+			}
+		}
+		else //regular message
+			for (const auto& listener : listeners_)
+				listener->handleMidiCC(channel, control, value);
+	}
+	else if (message.isNoteOn()) {
+		for (const auto& listener : listeners_) {
+			listener->handleMidiNote(message.getChannel(), message.getNoteNumber());
+		}
+	}
+	else if (message.isPitchWheel()) {
+		const auto value =
+			static_cast<unsigned short int>(message.getPitchWheelValue());
+		for (const auto& listener : listeners_) {
+			listener->handlePitchWheel(message.getChannel(), value);
+		}
+	}
 }
 
 void MIDIProcessor::addMIDICommandListener(MIDICommandListener* listener) {
-  listeners_.addIfNotAlreadyThere(listener);
+  for (const auto& current_listener : listeners_)
+    if (current_listener == listener)
+      return; //don't add duplicates
+  listeners_.push_back(listener);
 }
 
-void MIDIProcessor::rescanDevices() {
-  for (auto dev : devices_)
+void MIDIProcessor::RescanDevices() {
+  for (const auto& dev : devices_)
     dev->stop();
-  devices_.clear(true);
+  devices_.clear();
 
   InitDevices_();
 }
 
 void MIDIProcessor::InitDevices_() {
-  for (auto idx = 0; idx < MidiInput::getDevices().size(); idx++) {
-    if (devices_.set(idx, MidiInput::openDevice(idx, this))) {
+  for (auto idx = 0; idx < juce::MidiInput::getDevices().size(); idx++) {
+    auto dev = juce::MidiInput::openDevice(idx, this);
+    if (dev != nullptr) {
+      devices_.emplace_back(dev);
       devices_[idx]->start();
       DBG(devices_[idx]->getName());
     }

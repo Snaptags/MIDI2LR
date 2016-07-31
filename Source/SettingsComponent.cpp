@@ -20,80 +20,83 @@ MIDI2LR.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "SettingsComponent.h"
+#include <utility>
 #include "../JuceLibraryCode/JuceHeader.h"
 
-constexpr auto SettingsLeft = 20;
-constexpr auto SettingsWidth = 400;
-constexpr auto SettingsHeight = 470;
+namespace {
+  constexpr auto kSettingsLeft = 20;
+  constexpr auto kSettingsWidth = 400;
+  constexpr auto kSettingsHeight = 470;
+}
 
 SettingsComponent::SettingsComponent(): ResizableLayout{this} {}
 
 SettingsComponent::~SettingsComponent() {}
 
-void SettingsComponent::Init(std::shared_ptr<SettingsManager>& settings_manager) {
+void SettingsComponent::Init(std::weak_ptr<SettingsManager>&& settings_manager) {
     //copy the pointer
-  settings_manager_ = settings_manager;
+  settings_manager_ = std::move(settings_manager);
 
   // for layouts to work you must start at some size
   // place controls in a location that is initially correct.
-  setSize(SettingsWidth, SettingsHeight);
+  setSize(kSettingsWidth, kSettingsHeight);
 
   if (const auto ptr = settings_manager_.lock()) {
     pickup_group_.setText("Pick up");
-    pickup_group_.setBounds(0, 0, SettingsWidth, 100);
+    pickup_group_.setBounds(0, 0, kSettingsWidth, 100);
     addToLayout(&pickup_group_, anchorMidLeft, anchorMidRight);
     addAndMakeVisible(pickup_group_);
 
-    pickup_label_.setFont(Font{12.f, Font::bold});
+    pickup_label_.setFont(juce::Font{12.f, juce::Font::bold});
     pickup_label_.setText("Disabling the pickup mode may be better for touchscreen interfaces and may solve issues with LR not picking up fast fader/knob movements", NotificationType::dontSendNotification);
-    pickup_label_.setBounds(SettingsLeft, 15, SettingsWidth - 2 * SettingsLeft, 50);
+    pickup_label_.setBounds(kSettingsLeft, 15, kSettingsWidth - 2 * kSettingsLeft, 50);
     addToLayout(&pickup_label_, anchorMidLeft, anchorMidRight);
     pickup_label_.setEditable(false);
-    pickup_label_.setColour(Label::textColourId, Colours::darkgrey);
+    pickup_label_.setColour(juce::Label::textColourId, juce::Colours::darkgrey);
     addAndMakeVisible(pickup_label_);
 
     pickup_enabled_.addListener(this);
-    pickup_enabled_.setToggleState(ptr->getPickupEnabled(), NotificationType::dontSendNotification);
-    pickup_enabled_.setBounds(SettingsLeft, 60, SettingsWidth - 2 * SettingsLeft, 32);
+    pickup_enabled_.setToggleState(ptr->getPickupEnabled(), juce::NotificationType::dontSendNotification);
+    pickup_enabled_.setBounds(kSettingsLeft, 60, kSettingsWidth - 2 * kSettingsLeft, 32);
     addToLayout(&pickup_enabled_, anchorMidLeft, anchorMidRight);
     addAndMakeVisible(pickup_enabled_);
 
     // ---------------------------- profile section -----------------------------------
     profile_group_.setText("Profile");
-    profile_group_.setBounds(0, 100, SettingsWidth, 100);
+    profile_group_.setBounds(0, 100, kSettingsWidth, 100);
     addToLayout(&profile_group_, anchorMidLeft, anchorMidRight);
     addAndMakeVisible(profile_group_);
 
     profile_location_button_.addListener(this);
-    profile_location_button_.setBounds(SettingsLeft, 120, SettingsWidth - 2 * SettingsLeft, 25);
+    profile_location_button_.setBounds(kSettingsLeft, 120, kSettingsWidth - 2 * kSettingsLeft, 25);
     addToLayout(&profile_location_button_, anchorMidLeft, anchorMidRight);
     addAndMakeVisible(profile_location_button_);
 
     profile_location_label_.setEditable(false);
-    profile_location_label_.setBounds(SettingsLeft, 145, SettingsWidth - 2 * SettingsLeft, 30);
+    profile_location_label_.setBounds(kSettingsLeft, 145, kSettingsWidth - 2 * kSettingsLeft, 30);
     addToLayout(&profile_location_label_, anchorMidLeft, anchorMidRight);
-    profile_location_label_.setColour(Label::textColourId, Colours::darkgrey);
+    profile_location_label_.setColour(juce::Label::textColourId, juce::Colours::darkgrey);
     addAndMakeVisible(profile_location_label_);
-    profile_location_label_.setText(ptr->getProfileDirectory(), NotificationType::dontSendNotification);
+    profile_location_label_.setText(ptr->getProfileDirectory(), juce::NotificationType::dontSendNotification);
 
     ////// ----------------------- auto hide section ------------------------------------
     autohide_group_.setText("Auto hide");
-    autohide_group_.setBounds(0, 200, SettingsWidth, 100);
+    autohide_group_.setBounds(0, 200, kSettingsWidth, 100);
     addToLayout(&autohide_group_, anchorMidLeft, anchorMidRight);
     addAndMakeVisible(autohide_group_);
 
-    autohide_explain_label_.setFont(Font{12.f, Font::bold});
-    autohide_explain_label_.setText("Autohide the plugin window in x seconds, select 0 for disabling autohide", NotificationType::dontSendNotification);
-    autohide_explain_label_.setBounds(SettingsLeft, 215, SettingsWidth - 2 * SettingsLeft, 50);
+    autohide_explain_label_.setFont(juce::Font{12.f, juce::Font::bold});
+    autohide_explain_label_.setText("Autohide the plugin window in x seconds, select 0 for disabling autohide", juce::NotificationType::dontSendNotification);
+    autohide_explain_label_.setBounds(kSettingsLeft, 215, kSettingsWidth - 2 * kSettingsLeft, 50);
     addToLayout(&autohide_explain_label_, anchorMidLeft, anchorMidRight);
     autohide_explain_label_.setEditable(false);
-    autohide_explain_label_.setFont(Font{12.f, Font::bold});
-    autohide_explain_label_.setColour(Label::textColourId, Colours::darkgrey);
+    autohide_explain_label_.setFont(juce::Font{12.f, juce::Font::bold});
+    autohide_explain_label_.setColour(juce::Label::textColourId, juce::Colours::darkgrey);
     addAndMakeVisible(autohide_explain_label_);
 
-    autohide_setting_.setBounds(SettingsLeft, 245, SettingsWidth - 2 * SettingsLeft, 50);
+    autohide_setting_.setBounds(kSettingsLeft, 245, kSettingsWidth - 2 * kSettingsLeft, 50);
     autohide_setting_.setRange(0, 10, 1);
-    autohide_setting_.setValue(ptr->getAutoHideTime(), NotificationType::dontSendNotification);
+    autohide_setting_.setValue(ptr->getAutoHideTime(), juce::NotificationType::dontSendNotification);
 
     addToLayout(&autohide_setting_, anchorMidLeft, anchorMidRight);
     //add this as the lister for the data
@@ -102,13 +105,13 @@ void SettingsComponent::Init(std::shared_ptr<SettingsManager>& settings_manager)
 
     ////// ----------------------- controller section ------------------------------------
     controllers_group_.setText("Controller Settings");
-    controllers_group_.setBounds(0, 300, SettingsWidth, 160);
+    controllers_group_.setBounds(0, 300, kSettingsWidth, 160);
     addToLayout(&controllers_group_, anchorMidLeft, anchorMidRight);
     addAndMakeVisible(controllers_group_);
 
     continuous_label_.setFont(Font{12.f, Font::bold});
     continuous_label_.setText("Enable this, if your DAW controller uses continuous encoders. If disabled (default) encoders are expected to send absolute values between 0 and 127.", NotificationType::dontSendNotification);
-    continuous_label_.setBounds(SettingsLeft, 315, SettingsWidth - 2 * SettingsLeft, 50);
+    continuous_label_.setBounds(kSettingsLeft, 315, kSettingsWidth - 2 * kSettingsLeft, 50);
     addToLayout(&continuous_label_, anchorMidLeft, anchorMidRight);
     continuous_label_.setEditable(false);
     continuous_label_.setColour(Label::textColourId, Colours::darkgrey);
@@ -116,20 +119,20 @@ void SettingsComponent::Init(std::shared_ptr<SettingsManager>& settings_manager)
 
     continuous_enabled_.addListener(this);
     continuous_enabled_.setToggleState(ptr->getContinuousEncoders(), NotificationType::dontSendNotification);
-    continuous_enabled_.setBounds(SettingsLeft, 360, SettingsWidth - 2 * SettingsLeft, 32);
+    continuous_enabled_.setBounds(kSettingsLeft, 360, kSettingsWidth - 2 * kSettingsLeft, 32);
     addToLayout(&continuous_enabled_, anchorMidLeft, anchorMidRight);
     addAndMakeVisible(continuous_enabled_);
 
     maxpitch_label_.setFont(Font{12.f, Font::bold});
     maxpitch_label_.setText("Use this setting to enter the maximum value your pitch bend control is sending.", NotificationType::dontSendNotification);
-    maxpitch_label_.setBounds(SettingsLeft, 380, SettingsWidth - 2 * SettingsLeft, 50);
+    maxpitch_label_.setBounds(kSettingsLeft, 380, kSettingsWidth - 2 * kSettingsLeft, 50);
     addToLayout(&maxpitch_label_, anchorMidLeft, anchorMidRight);
     maxpitch_label_.setEditable(false);
     maxpitch_label_.setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(maxpitch_label_);
 
     pitch_max_value_.addListener(this);
-    pitch_max_value_.setBounds(SettingsLeft, 420, 100, 25);
+    pitch_max_value_.setBounds(kSettingsLeft, 420, 100, 25);
 	pitch_max_value_.setColour(TextEditor::outlineColourId, Colours::darkgrey);
 	pitch_max_value_.setText(ptr->getPitchMaxValue(), NotificationType::dontSendNotification);
     addToLayout(&pitch_max_value_, anchorMidLeft, anchorMidRight);
@@ -137,7 +140,7 @@ void SettingsComponent::Init(std::shared_ptr<SettingsManager>& settings_manager)
 
 	// because I cannot get the TextEditor events to do anything I just add an apply button :-)
 	apply_button_.addListener(this);
-    apply_button_.setBounds(SettingsLeft + 120, 420, 100, 25);
+    apply_button_.setBounds(kSettingsLeft + 120, 420, 100, 25);
     addToLayout(&apply_button_, anchorMidLeft, anchorMidRight);
     addAndMakeVisible(apply_button_);
 
@@ -146,15 +149,14 @@ void SettingsComponent::Init(std::shared_ptr<SettingsManager>& settings_manager)
   }
 }
 
-void SettingsComponent::paint(Graphics& g) {
-  g.fillAll(Colours::white);   // clear the background
+void SettingsComponent::paint(juce::Graphics& g) {
+  g.fillAll(juce::Colours::white);   // clear the background
 }
 
-void SettingsComponent::buttonClicked(Button* button) {
+void SettingsComponent::buttonClicked(juce::Button* button) {
   if (button == &pickup_enabled_) {
-    if (auto ptr = settings_manager_.lock()) {
+    if (const auto ptr = settings_manager_.lock())
       ptr->setPickupEnabled(pickup_enabled_.getToggleState());
-    }
   }
   if (button == &continuous_enabled_) {
     if (auto ptr = settings_manager_.lock()) {
@@ -167,40 +169,30 @@ void SettingsComponent::buttonClicked(Button* button) {
     }
   }
   else if (button == &profile_location_button_) {
-    FileBrowserComponent browser{FileBrowserComponent::canSelectDirectories |
-      FileBrowserComponent::openMode,
-        File::getCurrentWorkingDirectory(),
-        nullptr,
-        nullptr};
-    FileChooserDialogBox dialog_box{"Select Profile Folder",
+    juce::FileBrowserComponent browser{
+      juce::FileBrowserComponent::canSelectDirectories | 
+      juce::FileBrowserComponent::openMode,
+        juce::File::getCurrentWorkingDirectory(), nullptr, nullptr};
+
+    juce::FileChooserDialogBox dialog_box{"Select Profile Folder",
         "Select a folder containing MIDI2LR Profiles",
-        browser,
-        true,
-        Colours::lightgrey};
+        browser, true, juce::Colours::lightgrey};
 
     if (dialog_box.show()) {
       const auto profile_location = browser.getSelectedFile(0).getFullPathName();
-      if (auto ptr = settings_manager_.lock()) {
+      if (const auto ptr = settings_manager_.lock()) {
         ptr->setProfileDirectory(profile_location);
       }
       profile_location_label_.setText(profile_location,
-        NotificationType::dontSendNotification);
+        juce::NotificationType::dontSendNotification);
     }
   }
 }
 
-void SettingsComponent::sliderValueChanged(Slider* slider) {
-    // NULL pointer check
-  if (slider) {
-    if (&autohide_setting_ == slider) {
-        //get the rounded setting
-      const int new_setting = static_cast<int>(autohide_setting_.getValue());
-
-      if (auto ptr= settings_manager_.lock()) {
-        ptr->setAutoHideTime(new_setting);
-      }
-    }
-  }
+void SettingsComponent::sliderValueChanged(juce::Slider* slider) {
+  if (slider && &autohide_setting_ == slider)
+    if (const auto ptr = settings_manager_.lock())
+      ptr->setAutoHideTime(static_cast<int>(autohide_setting_.getValue()));
 }
 
 void SettingsComponent::textEditorTextChanged(TextEditor &editor) {

@@ -20,9 +20,11 @@ MIDI2LR.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "MainWindow.h"
+#include <utility>
 
 void MainWindow::Init(std::shared_ptr<CommandMap>& command_map,
-  std::shared_ptr<LR_IPC_IN>& lr_ipc_in, std::shared_ptr<LR_IPC_OUT>& lr_ipc_out,
+  std::weak_ptr<LR_IPC_IN>&& lr_ipc_in,
+  std::weak_ptr<LR_IPC_OUT>&& lr_ipc_out,
   std::shared_ptr<MIDIProcessor>& midi_processor,
   std::shared_ptr<ProfileManager>& profile_manager,
   std::shared_ptr<SettingsManager>& settings_manager,
@@ -36,11 +38,11 @@ void MainWindow::Init(std::shared_ptr<CommandMap>& command_map,
   }
 
   //start timing
-  this->startTimer(1000);
+  juce::Timer::startTimer(1000);
 
   if (window_content_) {
-    window_content_->Init(command_map, lr_ipc_in, lr_ipc_out, midi_processor,
-      profile_manager, settings_manager, midi_sender);
+    window_content_->Init(command_map, std::move(lr_ipc_in), std::move(lr_ipc_out),
+      midi_processor, profile_manager, settings_manager, midi_sender);
   }
 }
 
@@ -58,12 +60,12 @@ void MainWindow::timerCallback(void) {
 
   if (auto_hide_counter_ == 0) {
     //first stop the timer so it will not be called again
-    this->stopTimer();
+    juce::Timer::stopTimer();
 
     //check if the window is not already minimized
-    if (!this->isMinimised()) {
+    if (!juce::ResizableWindow::isMinimised()) {
       if (decreased_value) {
-        this->minimiseButtonPressed();
+        juce::DocumentWindow::minimiseButtonPressed();
       }
     }
   }

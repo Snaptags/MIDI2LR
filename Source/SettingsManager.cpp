@@ -19,38 +19,38 @@ MIDI2LR.  If not, see <http://www.gnu.org/licenses/>.
   ==============================================================================
 */
 #include "SettingsManager.h"
+#include <string>
+#include <utility>
 #include "ProfileManager.h"
 
-//constexpr and auto don't work in XCode
 const juce::String AutoHideSection{"autohide"};
 
 SettingsManager::SettingsManager() {
-  PropertiesFile::Options file_options;
+  juce::PropertiesFile::Options file_options;
   file_options.applicationName = "MIDI2LR";
   file_options.commonToAllUsers = false;
   file_options.filenameSuffix = "xml";
   file_options.osxLibrarySubFolder = "Application Support/MIDI2LR";
-  file_options.storageFormat = PropertiesFile::storeAsXML;
+  file_options.storageFormat = juce::PropertiesFile::storeAsXML;
 
-  properties_file_ = std::make_unique<PropertiesFile>(file_options);
+  properties_file_ = std::make_unique<juce::PropertiesFile>(file_options);
 }
 
-void SettingsManager::Init(std::shared_ptr<LR_IPC_OUT>& lr_ipc_out,
-  std::shared_ptr<ProfileManager>& profile_manager) {
-  lr_ipc_out_ = lr_ipc_out;
+void SettingsManager::Init(std::weak_ptr<LR_IPC_OUT>&& lr_ipc_out,
+  std::weak_ptr<ProfileManager>&& profile_manager) {
+  lr_ipc_out_ = std::move(lr_ipc_out);
 
-  if (lr_ipc_out_) {
+  if (const auto ptr = lr_ipc_out_.lock()) {
       // add ourselves as a listener to LR_IPC_OUT so that we can send plugin
       // settings on connection
-    lr_ipc_out_->addListener(this);
+    ptr->addListener(this);
   }
 
-  profile_manager_ = profile_manager;
+  profile_manager_ = std::move(profile_manager);
 
-  if (profile_manager_) {
+  if (const auto ptr = profile_manager_.lock()) {
       // set the profile directory
-    File profile_directory{getProfileDirectory()};
-    profile_manager->setProfileDirectory(profile_directory);
+    ptr->setProfileDirectory(getProfileDirectory());
   }
 }
 
@@ -62,24 +62,19 @@ void SettingsManager::setPickupEnabled(bool enabled) {
   properties_file_->setValue("pickup_enabled", enabled);
   properties_file_->saveIfNeeded();
 
-  auto command = String::formatted("Pickup %d\n", enabled);
-
-  if (lr_ipc_out_) {
-    lr_ipc_out_->sendCommand(command);
+  if (const auto ptr = lr_ipc_out_.lock()) {
+    ptr->sendCommand("Pickup " + std::to_string(static_cast<unsigned>(enabled)) + '\n');
   }
 }
-
-String SettingsManager::getProfileDirectory() const noexcept {
+juce::String SettingsManager::getProfileDirectory() const noexcept {
   return properties_file_->getValue("profile_directory");
 }
 
-void SettingsManager::setProfileDirectory(const String& profile_directory_name) {
+void SettingsManager::setProfileDirectory(const juce::String& profile_directory_name) {
   properties_file_->setValue("profile_directory", profile_directory_name);
   properties_file_->saveIfNeeded();
-
-  if (profile_manager_) {
-    File profileDir{profile_directory_name};
-    profile_manager_->setProfileDirectory(profileDir);
+  if (const auto ptr = profile_manager_.lock()) {
+    ptr->setProfileDirectory(profile_directory_name);
   }
 }
 
@@ -102,10 +97,8 @@ void SettingsManager::setPitchMaxValue(const String& pitch_max_value) {
 }
 
 void SettingsManager::connected() {
-  auto command = String::formatted("Pickup %d\n", getPickupEnabled());
-
-  if (lr_ipc_out_) {
-    lr_ipc_out_->sendCommand(command);
+  if (const auto ptr = lr_ipc_out_.lock()) {
+    ptr->sendCommand("Pickup " + std::to_string(static_cast<unsigned>(getPickupEnabled())) + '\n');
   }
 }
 

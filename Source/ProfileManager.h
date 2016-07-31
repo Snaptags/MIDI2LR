@@ -22,6 +22,8 @@ MIDI2LR.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PROFILEMANAGER_H_INCLUDED
 #define PROFILEMANAGER_H_INCLUDED
 
+#include <memory>
+#include <vector>
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "CommandMap.h"
 #include "LR_IPC_OUT.h"
@@ -30,33 +32,33 @@ MIDI2LR.  If not, see <http://www.gnu.org/licenses/>.
 class ProfileChangeListener {
 public:
     // called when the current profile is changed
-  virtual void profileChanged(XmlElement* elem, const String& file_name) = 0;
+  virtual void profileChanged(juce::XmlElement* elem, const juce::String& file_name) = 0;
 
   virtual ~ProfileChangeListener() {};
 };
 
 class ProfileManager final: public MIDICommandListener,
-  private AsyncUpdater, public LRConnectionListener {
+  private juce::AsyncUpdater, public LRConnectionListener {
 public:
   ProfileManager() noexcept;
   virtual ~ProfileManager() {};
-  void Init(std::shared_ptr<LR_IPC_OUT> out,
-    std::shared_ptr<CommandMap> command_map,
-    std::shared_ptr<MIDIProcessor> midi_processor);
+  void Init(std::weak_ptr<LR_IPC_OUT>&& out,
+    std::shared_ptr<CommandMap>& command_map,
+    std::shared_ptr<MIDIProcessor>& midi_processor);
 
   void addListener(ProfileChangeListener *listener);
 
   // sets the default profile directory and scans its contents for profiles
-  void setProfileDirectory(const File& dir);
+  void setProfileDirectory(const juce::File& dir);
 
   // returns an array of profile names
-  const StringArray& getMenuItems() const noexcept;
+  const std::vector<juce::String>& getMenuItems() const noexcept;
 
   // switches to a profile defined by an index
   void switchToProfile(int profileIdx);
 
   // switches to a profile defined by a name
-  void switchToProfile(const String& profile);
+  void switchToProfile(const juce::String& profile);
 
   // switches to the next profile
   void switchToNextProfile();
@@ -74,7 +76,7 @@ public:
   virtual void disconnected() override;
 
 private:
-	void mapCommand(MIDI_Message msg);
+	void mapCommand(MIDI_Message_ID msg);
   // AsyncUpdate interface
   virtual void handleAsyncUpdate() override;
   enum class SWITCH_STATE {
@@ -86,12 +88,12 @@ private:
   ProfileManager(ProfileManager const&) = delete;
   void operator=(ProfileManager const&) = delete;
 
-  Array<ProfileChangeListener *> listeners_;
-  File profile_location_;
+  juce::File profile_location_;
   int current_profile_index_{0};
   std::shared_ptr<CommandMap> command_map_{nullptr};
-  std::shared_ptr<LR_IPC_OUT> lr_ipc_out_{nullptr};
-  StringArray profiles_;
+  std::vector<ProfileChangeListener *> listeners_;
+  std::weak_ptr<LR_IPC_OUT> lr_ipc_out_;
+  std::vector<juce::String> profiles_;
   SWITCH_STATE switch_state_;
 };
 

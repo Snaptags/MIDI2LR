@@ -22,10 +22,6 @@ MIDI2LR.  If not, see <http://www.gnu.org/licenses/>.
 local LrMobdebug = import 'LrMobdebug'
 LrMobdebug.start()
 --]]-----------end debug section
--- signal for halt plugin if reloaded--LR doesn't kill main loop otherwise
-math.randomseed(os.time())
-currentLoadVersion = rawget (_G, 'currentLoadVersion') or math.random()  
-currentLoadVersion = currentLoadVersion + 1 + math.random()
 
 local LrTasks = import 'LrTasks'
 -- Main task
@@ -45,9 +41,9 @@ LrTasks.startAsyncTask(
       local LrFileUtils    = import 'LrFileUtils'
       local LrLocalization = import 'LrLocalization'
       local Info           = require 'Info'
-      local versionmismatch = false
       local appdatafile     = LrPathUtils.child(_PLUGIN.path, 'MenuList.lua')
       local plugindatafile  = LrPathUtils.child(_PLUGIN.path, 'ParamList.lua')
+      local versionmismatch = false
 
       if ProgramPreferences.DataStructure == nil then
         versionmismatch = true
@@ -87,15 +83,15 @@ LrTasks.startAsyncTask(
     local LrStringUtils       = import 'LrStringUtils'
     local LrUndo              = import 'LrUndo'
     --global variables
-    MIDI2LR = {PARAM_OBSERVER = {}, SERVER = {}} --non-local but in MIDI2LR namespace
+    MIDI2LR = {PARAM_OBSERVER = {}, SERVER = {}, RUNNING = true} --non-local but in MIDI2LR namespace
     --local variables
     local LastParam           = ''
     local UpdateParamPickup, UpdateParamNoPickup, UpdateParam
     --local constants--may edit these to change program behaviors
+    local BUTTON_ON        = 0.99 -- sending 1.0, but use > BUTTON_ON in case of rounding error
+    local PICKUP_THRESHOLD = 0.03 -- roughly equivalent to 4/127
     local RECEIVE_PORT     = 58763
     local SEND_PORT        = 58764
-    local PICKUP_THRESHOLD = 0.03 -- roughly equivalent to 4/127
-    local BUTTON_ON        = 0.99 -- sending 1.0, but use > BUTTON_ON in case of rounding error
 
     local ACTIONS = {
       --   AddToQuickCollection     = CU.addToCollection('quick',LrApplication.activeCatalog():getTargetPhotos()),
@@ -120,6 +116,7 @@ LrTasks.startAsyncTask(
       EnableRetouch                          = CU.fToggleTF('EnableRetouch'),
       EnableSplitToning                      = CU.fToggleTF('EnableSplitToning'),
       EnableToneCurve                        = CU.fToggleTF('EnableToneCurve'),
+      FullRefresh                            = CU.FullRefresh,
       GraduatedFilter                        = CU.fToggleTool('gradient'),
       IncreaseRating                         = LrSelection.increaseRating,
       IncrementLastDevelopParameter = function() Ut.execFOM(LrDevelopController.increment,LastParam) end,
@@ -166,91 +163,49 @@ LrTasks.startAsyncTask(
       LensProfileEnable        = CU.fToggle01('LensProfileEnable'),
       Loupe                    = CU.fToggleTool('loupe'),
       Next                     = LrSelection.nextPhoto,
-      PasteSelectedSettings    = CU.PasteSelectedSettings(false),
-      PasteSelectedSettingsAllSel    = CU.PasteSelectedSettings(true),
-      PasteSettings            = CU.PasteSettings(false),
-      PasteSettingsAllSel      = CU.PasteSettings(true),
+      PasteSelectedSettings    = CU.PasteSelectedSettings,
+      PasteSettings            = CU.PasteSettings,
       Pick                     = LrSelection.flagAsPick,
-      Preset_1                 = CU.fApplyPreset(1,false),
-      Preset_2                 = CU.fApplyPreset(2,false),
-      Preset_3                 = CU.fApplyPreset(3,false),
-      Preset_4                 = CU.fApplyPreset(4,false),
-      Preset_5                 = CU.fApplyPreset(5,false),
-      Preset_6                 = CU.fApplyPreset(6,false),
-      Preset_7                 = CU.fApplyPreset(7,false),
-      Preset_8                 = CU.fApplyPreset(8,false),
-      Preset_9                 = CU.fApplyPreset(9,false),
-      Preset_10                = CU.fApplyPreset(10,false),
-      Preset_11                = CU.fApplyPreset(11,false),
-      Preset_12                = CU.fApplyPreset(12,false),
-      Preset_13                = CU.fApplyPreset(13,false),
-      Preset_14                = CU.fApplyPreset(14,false),
-      Preset_15                = CU.fApplyPreset(15,false),
-      Preset_16                = CU.fApplyPreset(16,false),
-      Preset_17                = CU.fApplyPreset(17,false),
-      Preset_18                = CU.fApplyPreset(18,false),
-      Preset_19                = CU.fApplyPreset(19,false),
-      Preset_20                = CU.fApplyPreset(20,false),
-      Preset_21                = CU.fApplyPreset(21,false),
-      Preset_22                = CU.fApplyPreset(22,false),
-      Preset_23                = CU.fApplyPreset(23,false),
-      Preset_24                = CU.fApplyPreset(24,false),
-      Preset_25                = CU.fApplyPreset(25,false),
-      Preset_26                = CU.fApplyPreset(26,false),
-      Preset_27                = CU.fApplyPreset(27,false),
-      Preset_28                = CU.fApplyPreset(28,false),
-      Preset_29                = CU.fApplyPreset(29,false),
-      Preset_30                = CU.fApplyPreset(30,false),
-      Preset_31                = CU.fApplyPreset(31,false),
-      Preset_32                = CU.fApplyPreset(32,false),
-      Preset_33                = CU.fApplyPreset(33,false),
-      Preset_34                = CU.fApplyPreset(34,false),
-      Preset_35                = CU.fApplyPreset(35,false),
-      Preset_36                = CU.fApplyPreset(36,false),
-      Preset_37                = CU.fApplyPreset(37,false),
-      Preset_38                = CU.fApplyPreset(38,false),
-      Preset_39                = CU.fApplyPreset(39,false),
-      Preset_40                = CU.fApplyPreset(40,false),
-      Preset_1_AllSel          = CU.fApplyPreset(1,true),
-      Preset_2_AllSel          = CU.fApplyPreset(2,true),
-      Preset_3_AllSel          = CU.fApplyPreset(3,true),
-      Preset_4_AllSel          = CU.fApplyPreset(4,true),
-      Preset_5_AllSel          = CU.fApplyPreset(5,true),
-      Preset_6_AllSel          = CU.fApplyPreset(6,true),
-      Preset_7_AllSel          = CU.fApplyPreset(7,true),
-      Preset_8_AllSel          = CU.fApplyPreset(8,true),
-      Preset_9_AllSel          = CU.fApplyPreset(9,true),
-      Preset_10_AllSel         = CU.fApplyPreset(10,true),
-      Preset_11_AllSel         = CU.fApplyPreset(11,true),
-      Preset_12_AllSel         = CU.fApplyPreset(12,true),
-      Preset_13_AllSel         = CU.fApplyPreset(13,true),
-      Preset_14_AllSel         = CU.fApplyPreset(14,true),
-      Preset_15_AllSel         = CU.fApplyPreset(15,true),
-      Preset_16_AllSel         = CU.fApplyPreset(16,true),
-      Preset_17_AllSel         = CU.fApplyPreset(17,true),
-      Preset_18_AllSel         = CU.fApplyPreset(18,true),
-      Preset_19_AllSel         = CU.fApplyPreset(19,true),
-      Preset_20_AllSel         = CU.fApplyPreset(20,true),
-      Preset_21_AllSel         = CU.fApplyPreset(21,true),
-      Preset_22_AllSel         = CU.fApplyPreset(22,true),
-      Preset_23_AllSel         = CU.fApplyPreset(23,true),
-      Preset_24_AllSel         = CU.fApplyPreset(24,true),
-      Preset_25_AllSel         = CU.fApplyPreset(25,true),
-      Preset_26_AllSel         = CU.fApplyPreset(26,true),
-      Preset_27_AllSel         = CU.fApplyPreset(27,true),
-      Preset_28_AllSel         = CU.fApplyPreset(28,true),
-      Preset_29_AllSel         = CU.fApplyPreset(29,true),
-      Preset_30_AllSel         = CU.fApplyPreset(30,true),
-      Preset_31_AllSel         = CU.fApplyPreset(31,true),
-      Preset_32_AllSel         = CU.fApplyPreset(32,true),
-      Preset_33_AllSel         = CU.fApplyPreset(33,true),
-      Preset_34_AllSel         = CU.fApplyPreset(34,true),
-      Preset_35_AllSel         = CU.fApplyPreset(35,true),
-      Preset_36_AllSel         = CU.fApplyPreset(36,true),
-      Preset_37_AllSel         = CU.fApplyPreset(37,true),
-      Preset_38_AllSel         = CU.fApplyPreset(38,true),
-      Preset_39_AllSel         = CU.fApplyPreset(39,true),
-      Preset_40_AllSel         = CU.fApplyPreset(40,true),
+      Preset_1                 = CU.fApplyPreset(1),
+      Preset_2                 = CU.fApplyPreset(2),
+      Preset_3                 = CU.fApplyPreset(3),
+      Preset_4                 = CU.fApplyPreset(4),
+      Preset_5                 = CU.fApplyPreset(5),
+      Preset_6                 = CU.fApplyPreset(6),
+      Preset_7                 = CU.fApplyPreset(7),
+      Preset_8                 = CU.fApplyPreset(8),
+      Preset_9                 = CU.fApplyPreset(9),
+      Preset_10                = CU.fApplyPreset(10),
+      Preset_11                = CU.fApplyPreset(11),
+      Preset_12                = CU.fApplyPreset(12),
+      Preset_13                = CU.fApplyPreset(13),
+      Preset_14                = CU.fApplyPreset(14),
+      Preset_15                = CU.fApplyPreset(15),
+      Preset_16                = CU.fApplyPreset(16),
+      Preset_17                = CU.fApplyPreset(17),
+      Preset_18                = CU.fApplyPreset(18),
+      Preset_19                = CU.fApplyPreset(19),
+      Preset_20                = CU.fApplyPreset(20),
+      Preset_21                = CU.fApplyPreset(21),
+      Preset_22                = CU.fApplyPreset(22),
+      Preset_23                = CU.fApplyPreset(23),
+      Preset_24                = CU.fApplyPreset(24),
+      Preset_25                = CU.fApplyPreset(25),
+      Preset_26                = CU.fApplyPreset(26),
+      Preset_27                = CU.fApplyPreset(27),
+      Preset_28                = CU.fApplyPreset(28),
+      Preset_29                = CU.fApplyPreset(29),
+      Preset_30                = CU.fApplyPreset(30),
+      Preset_31                = CU.fApplyPreset(31),
+      Preset_32                = CU.fApplyPreset(32),
+      Preset_33                = CU.fApplyPreset(33),
+      Preset_34                = CU.fApplyPreset(34),
+      Preset_35                = CU.fApplyPreset(35),
+      Preset_36                = CU.fApplyPreset(36),
+      Preset_37                = CU.fApplyPreset(37),
+      Preset_38                = CU.fApplyPreset(38),
+      Preset_39                = CU.fApplyPreset(39),
+      Preset_40                = CU.fApplyPreset(40),
       Prev                     = LrSelection.previousPhoto,
       Profile_Adobe_Standard          = Ut.wrapFOM(LrDevelopController.setValue,'CameraProfile','Adobe Standard'),
       Profile_Camera_Clear            = Ut.wrapFOM(LrDevelopController.setValue,'CameraProfile','Camera Clear'),
@@ -396,6 +351,7 @@ LrTasks.startAsyncTask(
     --called within LrRecursionGuard for setting
     function UpdateParamPickup() --closure
       local paramlastmoved = {}
+      local lastfullrefresh = 0
       return function(param, midi_value)
         local value
         if LrApplicationView.getCurrentModuleName() ~= 'develop' then
@@ -416,11 +372,17 @@ LrTasks.startAsyncTask(
           if ParamList.ProfileMap[param] then
             Profiles.changeProfile(ParamList.ProfileMap[param])
           end
-        elseif ProgramPreferences.ClientShowBezelOnChange then -- failed pickup. do I display bezel?
-          value = MIDIValueToLRValue(param, midi_value)
-          local actualvalue = LrDevelopController.getValue(param)
-          local precision = Ut.precision(value)
-          LrDialogs.showBezel(param..'  '..LrStringUtils.numberToStringWithSeparators(value,precision)..'  '..LrStringUtils.numberToStringWithSeparators(actualvalue,precision))
+        else --failed pickup
+          if ProgramPreferences.ClientShowBezelOnChange then -- failed pickup. do I display bezel?
+            value = MIDIValueToLRValue(param, midi_value)
+            local actualvalue = LrDevelopController.getValue(param)
+            local precision = Ut.precision(value)
+            LrDialogs.showBezel(param..'  '..LrStringUtils.numberToStringWithSeparators(value,precision)..'  '..LrStringUtils.numberToStringWithSeparators(actualvalue,precision))
+          end
+          if lastfullrefresh + 1 < os.clock() then --try refreshing controller once a second
+            CU.FullRefresh()
+            lastfullrefresh = os.clock()
+          end
         end -- end of if pickup/elseif bezel group
       end -- end of returned function
     end
@@ -531,17 +493,13 @@ LrTasks.startAsyncTask(
           LrShell.openFilesInApp({LrPathUtils.child(_PLUGIN.path, 'Info.lua')}, LrPathUtils.child(_PLUGIN.path, 'MIDI2LR.app')) 
         end
 
-        math.randomseed(os.time())
-        currentLoadVersion = math.random() --in case currentLoadVersion gets initialized to 0 each load
-        local loadVersion = currentLoadVersion  
-
         -- add an observer for develop param changes--needs to occur in develop module
         -- will drop out of loop if loadversion changes or if in develop module with selected photo
-        while (loadVersion == currentLoadVersion) and ((LrApplicationView.getCurrentModuleName() ~= 'develop') or (LrApplication.activeCatalog():getTargetPhoto() == nil)) do
+        while  MIDI2LR.RUNNING and ((LrApplicationView.getCurrentModuleName() ~= 'develop') or (LrApplication.activeCatalog():getTargetPhoto() == nil)) do
           LrTasks.sleep ( .29 )
           guardsetting:performWithGuard(Profiles.checkProfile)
         end --sleep away until ended or until develop module activated
-        if loadVersion == currentLoadVersion then --didn't drop out of loop because of program termination
+        if MIDI2LR.RUNNING then --didn't drop out of loop because of program termination
           LrDevelopController.revealAdjustedControls( true ) -- reveal affected parameter in panel track
           if ProgramPreferences.TrackingDelay ~= nil then
             LrDevelopController.setTrackingDelay(ProgramPreferences.TrackingDelay)
@@ -553,7 +511,7 @@ LrTasks.startAsyncTask(
               guardreading:performWithGuard(CurrentObserver,observer)
             end 
           )
-          while (loadVersion == currentLoadVersion)  do --detect halt or reload
+          while MIDI2LR.RUNNING do --detect halt or reload
             LrTasks.sleep( .29 )
             guardsetting:performWithGuard(Profiles.checkProfile)
           end

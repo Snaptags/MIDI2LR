@@ -22,6 +22,7 @@ MIDI2LR.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SETTINGSMANAGER_H_INCLUDED
 #define SETTINGSMANAGER_H_INCLUDED
 
+#include <memory>
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "LR_IPC_OUT.h"
 #include "ProfileManager.h"
@@ -30,8 +31,8 @@ class SettingsManager final: public LRConnectionListener {
 public:
   SettingsManager();
   virtual ~SettingsManager() {};
-  void Init(std::shared_ptr<LR_IPC_OUT>& lr_IPC_OUT,
-    std::shared_ptr<ProfileManager>& profile_manager);
+  void Init(std::weak_ptr<LR_IPC_OUT>&& lr_IPC_OUT,
+    std::weak_ptr<ProfileManager>&& profile_manager);
 
   bool getPickupEnabled() const noexcept;
   void setPickupEnabled(bool enabled);
@@ -39,8 +40,8 @@ public:
   bool getContinuousEncoders() const noexcept;
   void setContinuousEncoders(bool enabled);
 
-  String getProfileDirectory() const noexcept;
-  void setProfileDirectory(const String& profile_directory);
+  juce::String getProfileDirectory() const noexcept;
+  void setProfileDirectory(const juce::String& profile_directory);
 
   String getPitchMaxValue() const noexcept;
   void setPitchMaxValue(const String& pitch_max_value);
@@ -57,9 +58,9 @@ public:
 
 private:
 
-  std::shared_ptr<LR_IPC_OUT> lr_ipc_out_{nullptr};
-  std::shared_ptr<ProfileManager> profile_manager_{nullptr};
-  std::unique_ptr<PropertiesFile> properties_file_;
+  std::unique_ptr<juce::PropertiesFile> properties_file_;
+  std::weak_ptr<LR_IPC_OUT> lr_ipc_out_;
+  std::weak_ptr<ProfileManager> profile_manager_;
 };
 
 #endif  // SETTINGSMANAGER_H_INCLUDED

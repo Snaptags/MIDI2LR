@@ -94,6 +94,12 @@ public:
   // gets the LR command associated to a MIDI message
   const std::string& getCommandforMessage(const MIDI_Message_ID& message) const;
 
+  // adds an entry to the message:value map to support continuous encoders
+  void addValueforMessage(unsigned int value, const MIDI_Message_ID &message);
+
+  // gets the current value associated to a MIDI message
+  const unsigned int getValueforMessage(const MIDI_Message_ID &message) const;
+
   // in the command:message map
   // removes a MIDI message from the message:command map, and it's associated entry
   void removeMessage(const MIDI_Message_ID& message);
@@ -117,6 +123,7 @@ private:
 
   std::unordered_map<MIDI_Message_ID, std::string> message_map_;
   std::multimap<std::string, MIDI_Message_ID> command_string_map_;
+  std::unordered_map<MIDI_Message_ID, unsigned int> value_map_;
 };
 
 inline void CommandMap::addCommandforMessage(const std::string& command, const MIDI_Message_ID& message) {

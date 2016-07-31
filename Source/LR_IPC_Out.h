@@ -74,12 +74,13 @@ private:
   virtual void handleAsyncUpdate() override;
   // Timer callback
   virtual void timerCallback() override;
+  unsigned int getAbsoluteValue(int value, MIDI_Message_ID message);
 
   std::vector<LRConnectionListener *> listeners_;
   bool timer_off_{false};
   mutable RSJ::spinlock command_mutex_; //fast spinlock for brief use
   mutable std::mutex timer_mutex_; //fix race during shutdown
-  std::shared_ptr<const CommandMap> command_map_;
+  std::shared_ptr<CommandMap> command_map_;
   std::string command_;
 };
 

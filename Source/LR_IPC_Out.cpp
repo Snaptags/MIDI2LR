@@ -43,10 +43,10 @@ LR_IPC_OUT::~LR_IPC_OUT() {
   command_map_.reset();
 }
 
-void LR_IPC_OUT::Init(std::shared_ptr<CommandMap>& command_map,
+void LR_IPC_OUT::Init(std::shared_ptr<CommandMap>& mapCommand,
   std::shared_ptr<MIDIProcessor>& midi_processor) {
     //copy the pointer
-  command_map_ = command_map;
+  command_map_ = mapCommand;
 
   if (midi_processor) {
     midi_processor->addMIDICommandListener(this);
@@ -84,8 +84,11 @@ void LR_IPC_OUT::handleMidiCC(int midi_channel, int controller, int value) {
 
     auto command_to_send = command_map_->getCommandforMessage(message);
     double computed_value = value;
-    computed_value /= (controller < 128) ? kMaxMIDI : kMaxNRPN;
 
+	computed_value = getAbsoluteValue(value, message);
+
+    computed_value /= (controller < 128) ? kMaxMIDI : kMaxNRPN;
+    
     command_to_send += ' ' + std::to_string(computed_value) + '\n';
     {
       std::lock_guard<decltype(command_mutex_)> lock(command_mutex_);
@@ -93,6 +96,30 @@ void LR_IPC_OUT::handleMidiCC(int midi_channel, int controller, int value) {
     }
     juce::AsyncUpdater::triggerAsyncUpdate();
   }
+}
+
+unsigned int LR_IPC_OUT::getAbsoluteValue(int value, MIDI_Message_ID message) {
+	// depending on how "fast" the encoder is turned, we expect to get values between 1 and 7 for clock wise rotation
+	// this arry will be used to get faster value increase:
+	const int factors[] = {0, 1, 2, 5, 10, 50, 100, 500};
+    int computed_value = 0;
+	int stored_value = command_map_->getValueforMessage(message);
+	int index;
+	if (value > 64) {
+		value = - value + 64; // encoder has been turned counter clock wise
+	}
+
+	// make sure the index fits the factors array:
+	index = std::max(0, abs(value));
+	index = std::min(7, index);
+	
+	computed_value = std::max(0, stored_value + (value * factors[index]));
+	computed_value = std::min(16383, computed_value);
+
+	// store the value in the command table:
+	command_map_->addValueforMessage(computed_value, message);
+
+	return abs(computed_value);
 }
 
 void LR_IPC_OUT::handleMidiNote(int midi_channel, int note) {

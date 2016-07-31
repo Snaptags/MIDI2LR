@@ -43,6 +43,33 @@ std::vector<const MIDI_Message_ID*> CommandMap::getMessagesForCommand(const std:
   return mm;
 }
 
+void CommandMap::addValueforMessage(unsigned int value, const MIDI_Message_ID &message) {
+	value_map_[message] = value;
+}
+
+const unsigned int CommandMap::getValueforMessage(const MIDI_Message_ID &message) const {
+	int value = 0;
+
+	if (!value_map_.empty()) {
+		value = value_map_.at(message);
+	}
+	if (value <= 0) {
+		return 0;
+	}
+	if (value > 16383) {
+		return 16383;
+	}
+	return value;
+}
+
+// ToDo: Do I still need this?
+//const MIDI_Message_ID& CommandMap::getMessageForCommand(const String &command) const {
+  //return command_string_map_.at(command);
+//}
+//bool CommandMap::commandHasAssociatedMessage(const String &command) const {
+  //return command_string_map_.count(command) > 0 ? true : false;
+//}
+
 void CommandMap::toXMLDocument(juce::File& file) const {
   if (message_map_.size()) {//don't bother if map is empty
     // save the contents of the command map to an xml file
